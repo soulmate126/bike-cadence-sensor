@@ -1,0 +1,30 @@
+[package]
+name = "bike-cadence-sensor"
+version = "0.1.0"
+authors = ["soulmate <18519338563@163.com>"]
+edition = "2021"
+resolver = "2"
+rust-version = "1.82"
+
+[[bin]]
+name = "bike-cadence-sensor"
+harness = false
+
+[profile.release]
+opt-level = "s"
+
+[profile.dev]
+debug = true
+opt-level = "z"
+
+[dependencies]
+log = "0.4"
+anyhow = "1"
+esp-idf-svc = { version = "0.52.1", features = ["critical-section", "embassy-time-driver", "embassy-sync", "experimental"] }
+esp-idf-hal = "0.46"
+embassy-time = { version = "0.5", features = ["generic-queue-8"] }
+embedded-graphics = "0.8"
+ssd1306 = "0.10"
+
+[build-dependencies]
+embuild = "0.33"
