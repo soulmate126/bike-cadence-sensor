@@ -14,7 +14,22 @@ ESP32-C3 + BLE CSC + 华为 GT5 Pro 自制踏频器。
 - [ ] 华为运动健康识别
 - [ ] OLED 本地显示（可选）
 
-协议说明见 [docs/csc-protocol.md](docs/csc-protocol.md)。
+协议说明见 [docs/csc-protocol.md](docs/csc-protocol.md)。  
+**新电脑 / 换设备**见 [docs/new-machine-setup.md](docs/new-machine-setup.md)。
+
+---
+
+## 快速开始
+
+```bash
+git clone git@github.com:soulmate126/bike-cadence-sensor.git
+cd bike-cadence-sensor
+./scripts/install-deps.sh
+./cargo build --example 01_blink          # 无板可编译
+./cargo run --example 01_blink            # 有板：烧录 + LED 验证
+```
+
+详细步骤、验证顺序与排错见 [docs/new-machine-setup.md](docs/new-machine-setup.md)。
 
 ---
 
@@ -150,11 +165,11 @@ espflash flash --monitor     # 需先编译出 bin
 cd bike-cadence-sensor
 
 # 首次会下载 ESP-IDF v5.5.3 并编译 C 组件，约 10–30 分钟，属正常
-cargo build --example 01_blink
-cargo build --example 02_hall_input
-cargo build --example 03_ssd1306
-cargo build --example 04_ble_advertise
-cargo build --example 05_ble_csc
+./cargo build --example 01_blink
+./cargo build --example 02_hall_input
+./cargo build --example 03_ssd1306
+./cargo build --example 04_ble_advertise
+./cargo build --example 05_ble_csc
 ```
 
 ### 烧录 + 串口日志
@@ -162,14 +177,14 @@ cargo build --example 05_ble_csc
 `.cargo/config.toml` 已配置 `runner = "espflash flash --monitor"`，因此：
 
 ```bash
-cargo run --example 01_blink
+./cargo run --example 01_blink
 # 等价于 build + espflash flash --monitor
 ```
 
 指定串口（多设备时）：
 
 ```bash
-ESPFLASH_PORT=/dev/cu.usbmodem1101 cargo run --example 01_blink
+ESPFLASH_PORT=/dev/cu.usbmodem1101 ./cargo run --example 01_blink
 ```
 
 ---
@@ -179,11 +194,11 @@ ESPFLASH_PORT=/dev/cu.usbmodem1101 cargo run --example 01_blink
 
 | 示例      | 命令                                     | 说明                                   |
 | ------- | -------------------------------------- | ------------------------------------ |
-| GPIO 点灯 | `cargo run --example 01_blink`         | 板载 LED **GPIO8**，500ms 翻转            |
-| 霍尔输入    | `cargo run --example 02_hall_input`    | **GPIO3** 上拉，下降沿计数（可用杜邦线短接 GND 模拟）   |
-| OLED    | `cargo run --example 03_ssd1306`       | I2C **SDA=5, SCL=6**，显示 `Hello Bike` |
-| BLE 广播  | `cargo run --example 04_ble_advertise` | 设备名 **DIY Cadence Sensor**           |
-| BLE CSC | `cargo run --example 05_ble_csc`       | 标准 **0x1816** 服务，模拟 80 RPM 通知        |
+| GPIO 点灯 | `./cargo run --example 01_blink`         | 板载 LED **GPIO8**，500ms 翻转            |
+| 霍尔输入    | `./cargo run --example 02_hall_input`    | **GPIO3** 上拉，下降沿计数（可用杜邦线短接 GND 模拟）   |
+| OLED    | `./cargo run --example 03_ssd1306`       | I2C **SDA=5, SCL=6**，显示 `Hello Bike` |
+| BLE 广播  | `./cargo run --example 04_ble_advertise` | 设备名 **DIY Cadence Sensor**           |
+| BLE CSC | `./cargo run --example 05_ble_csc`       | 标准 **0x1816** 服务，模拟 80 RPM 通知        |
 
 
 引脚定义见 `src/board/mod.rs`，可按实际接线修改。
@@ -228,18 +243,18 @@ bike-cadence-sensor/
 espup --version && espflash --version && cargo-generate --version && ldproxy 2>&1 | head -1
 
 # 2. 编译（不连板也可）
-cargo build --example 01_blink
+./cargo build --example 01_blink
 
 # 3. 连板烧录
-cargo run --example 01_blink
+./cargo run --example 01_blink
 # 预期：串口看到日志，GPIO8 LED 闪烁
 
 # 4. BLE CSC（推荐）
-cargo run --example 05_ble_csc
+./cargo run --example 05_ble_csc
 # nRF Connect：连接后订阅 0x2A5B，应收到累计转数 + 事件时间
 
 # 4b. 仅广播（无 GATT）
-cargo run --example 04_ble_advertise
+./cargo run --example 04_ble_advertise
 # 手机 nRF Connect 可扫到 "DIY Cadence Sensor"
 ```
 
@@ -255,7 +270,7 @@ cargo run --example 04_ble_advertise
 | 找不到串口                   | 驱动 / 线材              | 换数据线；`ls /dev/cu.`*；安装 CP210x/CH340 驱动                                     |
 | `espflash` 无法连接         | 端口占用                 | 关闭其他串口监视器；指定 `ESPFLASH_PORT`                                               |
 | 首次 `cargo build` 很久     | 下载并编译 ESP-IDF        | 正常；确保网络稳定；`ESP_IDF_TOOLS_INSTALL_DIR=global`                               |
-| `ldproxy` not found     | PATH                 | `export PATH="$HOME/.cargo/bin:$(brew --prefix)/bin:$PATH"`                |
+| `ldproxy` not found     | PATH                 | 使用 `./cargo build` 或 `source scripts/env.sh`                |
 | BLE 扫不到                 | sdkconfig / 内存       | 检查 `sdkconfig.defaults` 中 `CONFIG_BT_*`；参考 esp-idf-svc `bt_gatt_server` 示例 |
 | OLED 无显示                | 接线 / 地址              | 确认 3.3V、SDA/SCL、I2C 地址 0x3C                                                |
 
