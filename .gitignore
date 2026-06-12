@@ -1,0 +1,15 @@
+# IDE
+/.vscode
+.idea/
+
+# macOS
+.DS_Store
+
+# Rust
+/target
+**/*.rs.bk
+
+# ESP-IDF / embuild
+/.embuild
+/sdkconfig
+/sdkconfig.old
