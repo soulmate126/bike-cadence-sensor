@@ -70,8 +70,10 @@ dependencies = [
  "embassy-time",
  "embedded-graphics",
  "embuild",
+ "enumset",
  "esp-idf-hal",
  "esp-idf-svc",
+ "heapless 0.8.0",
  "log",
  "ssd1306",
 ]

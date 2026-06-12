@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# 项目内 cargo 包装器 — 自动加载 PATH，无需 direnv
+set -euo pipefail
+_root="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=scripts/env.sh
+source "$_root/scripts/env.sh"
+exec cargo "$@"

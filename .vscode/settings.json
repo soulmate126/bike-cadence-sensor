@@ -1,0 +1,8 @@
+{
+  "terminal.integrated.env.osx": {
+    "PATH": "${env:HOME}/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:${env:PATH}"
+  },
+  "rust-analyzer.cargo.extraEnv": {
+    "PATH": "${env:HOME}/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:${env:PATH}"
+  }
+}

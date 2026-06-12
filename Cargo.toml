@@ -25,6 +25,8 @@ esp-idf-hal = "0.46"
 embassy-time = { version = "0.5", features = ["generic-queue-8"] }
 embedded-graphics = "0.8"
 ssd1306 = "0.10"
+enumset = "1"
+heapless = "0.8"
 
 [build-dependencies]
 embuild = "0.33"

@@ -1,21 +1,52 @@
-# DIY 自行车踏频器 — ESP32-C3 Rust 工程
+# DIY Cadence Sensor
+
+ESP32-C3 + BLE CSC + 华为 GT5 Pro 自制踏频器。
+
+## Milestones
+
+- [x] 项目骨架（`src/` 模块 + examples）
+- [ ] Hello World（`01_blink` 烧录验证）
+- [ ] GPIO / 霍尔输入（`02_hall_input`）
+- [x] RPM 算法（`src/cadence/`，含单元测试）
+- [x] BLE CSC 数据结构（`src/ble/csc.rs`）
+- [x] BLE GATT Server 骨架（`src/ble/server.rs` + `05_ble_csc`）
+- [ ] GT5 Pro 配对
+- [ ] 华为运动健康识别
+- [ ] OLED 本地显示（可选）
+
+协议说明见 [docs/csc-protocol.md](docs/csc-protocol.md)。
+
+---
 
 基于 [esp-rs](https://github.com/esp-rs) 官方 **esp-idf-template**（ESP-IDF + Rust `std`），目标芯片 **ESP32-C3 SuperMini**。
 
 ## 为什么之前 `cargo install` 很慢？
 
-| 方式 | 耗时 | 原因 |
-|------|------|------|
+
+| 方式                               | 耗时        | 原因                                          |
+| -------------------------------- | --------- | ------------------------------------------- |
 | `cargo install espup espflash …` | 15–30+ 分钟 | 从源码编译 **OpenSSL / aws-lc-sys / ring** 等原生依赖 |
-| **Homebrew bottle** | 秒级～数分钟 | 预编译二进制，直接 pour |
-| **GitHub 预编译 espup** | ~10 秒 | 官方 release 二进制 |
-| **首次 `cargo build`** | 10–30 分钟 | 下载 ESP-IDF v5.5.3 并编译 C 组件（仅第一次） |
+| **Homebrew bottle**              | 秒级～数分钟    | 预编译二进制，直接 pour                              |
+| **GitHub 预编译 espup**             | ~10 秒     | 官方 release 二进制                              |
+| **首次 `cargo build`**             | 10–30 分钟  | 下载 ESP-IDF v5.5.3 并编译 C 组件（仅第一次）            |
+
 
 **推荐策略（本项目采用）**：能用 Homebrew 的用 Homebrew；`espup` 下预编译包；仅 `ldproxy` 用 `cargo install`（~2 分钟，无 Homebrew formula）。
 
-### 重要：PATH 顺序
+### 重要：PATH 顺序（已写入项目）
 
-若同时安装了 `brew install rust` 与 rustup，**必须**让 rustup 的 cargo 优先，否则 `build-std` 不生效：
+若同时安装了 `brew install rust` 与 rustup，**必须**让 rustup 的 cargo 优先，否则 `build-std` 不生效。
+
+本项目已内置环境配置，**任选一种**即可：
+
+| 方式 | 命令 / 操作 |
+|------|-------------|
+| **项目 cargo 脚本** | `./cargo build`（无需 direnv，推荐） |
+| **direnv** | `brew install direnv`，配置 shell hook 后 `direnv allow` |
+| **手动 source** | `source scripts/env.sh` |
+| **Cursor / VS Code** | 打开本项目，集成终端自动应用 `.vscode/settings.json` |
+
+核心逻辑在 `scripts/env.sh`：
 
 ```bash
 export PATH="$HOME/.cargo/bin:$(brew --prefix)/bin:$PATH"
@@ -65,16 +96,18 @@ espup install --std --targets esp32c3
 
 ### 各工具用途
 
-| 工具 | 用途 | 安装方式 |
-|------|------|----------|
-| **rust** | Rust 编译器 / cargo | `brew install rust` |
-| **cargo-generate** | 从 esp-idf-template 生成工程 | `brew install cargo-generate` |
-| **espflash** | 编译后烧录 + 串口 monitor | `brew install espflash` |
-| **esptool** | 底层 Flash 工具（espflash 也会用到） | `brew install esptool` |
-| **cmake / ninja** | ESP-IDF 构建 | Homebrew |
-| **python@3.12** | ESP-IDF 脚本 | Homebrew |
-| **espup** | 安装 ESP 专用 Rust target / 工具链 | GitHub 预编译二进制 |
-| **ldproxy** | `.cargo/config.toml` 中配置的 linker | `cargo install ldproxy` |
+
+| 工具                                    | 用途                               | 安装方式                          |
+| ------------------------------------- | -------------------------------- | ----------------------------- |
+| **rust**                              | Rust 编译器 / cargo                 | `brew install rust`           |
+| **cargo-generate**                    | 从 esp-idf-template 生成工程          | `brew install cargo-generate` |
+| **espflash**                          | 编译后烧录 + 串口 monitor               | `brew install espflash`       |
+| **esptool**                           | 底层 Flash 工具（espflash 也会用到）       | `brew install esptool`        |
+| **cmake / ninja**                     | ESP-IDF 构建                       | Homebrew                      |
+| **[python@3.12](mailto:python@3.12)** | ESP-IDF 脚本                       | Homebrew                      |
+| **espup**                             | 安装 ESP 专用 Rust target / 工具链      | GitHub 预编译二进制                 |
+| **ldproxy**                           | `.cargo/config.toml` 中配置的 linker | `cargo install ldproxy`       |
+
 
 每次新开终端（若 `~/export-esp.sh` 非空）：
 
@@ -121,6 +154,7 @@ cargo build --example 01_blink
 cargo build --example 02_hall_input
 cargo build --example 03_ssd1306
 cargo build --example 04_ble_advertise
+cargo build --example 05_ble_csc
 ```
 
 ### 烧录 + 串口日志
@@ -142,12 +176,15 @@ ESPFLASH_PORT=/dev/cu.usbmodem1101 cargo run --example 01_blink
 
 ## 第五～八部分：示例说明
 
-| 示例 | 命令 | 说明 |
-|------|------|------|
-| GPIO 点灯 | `cargo run --example 01_blink` | 板载 LED **GPIO8**，500ms 翻转 |
-| 霍尔输入 | `cargo run --example 02_hall_input` | **GPIO3** 上拉，下降沿计数（可用杜邦线短接 GND 模拟） |
-| OLED | `cargo run --example 03_ssd1306` | I2C **SDA=5, SCL=6**，显示 `Hello Bike` |
-| BLE 广播 | `cargo run --example 04_ble_advertise` | 设备名 **DIY Cadence Sensor** |
+
+| 示例      | 命令                                     | 说明                                   |
+| ------- | -------------------------------------- | ------------------------------------ |
+| GPIO 点灯 | `cargo run --example 01_blink`         | 板载 LED **GPIO8**，500ms 翻转            |
+| 霍尔输入    | `cargo run --example 02_hall_input`    | **GPIO3** 上拉，下降沿计数（可用杜邦线短接 GND 模拟）   |
+| OLED    | `cargo run --example 03_ssd1306`       | I2C **SDA=5, SCL=6**，显示 `Hello Bike` |
+| BLE 广播  | `cargo run --example 04_ble_advertise` | 设备名 **DIY Cadence Sensor**           |
+| BLE CSC | `cargo run --example 05_ble_csc`       | 标准 **0x1816** 服务，模拟 80 RPM 通知        |
+
 
 引脚定义见 `src/board/mod.rs`，可按实际接线修改。
 
@@ -166,7 +203,8 @@ bike-cadence-sensor/
 │   ├── 01_blink.rs
 │   ├── 02_hall_input.rs
 │   ├── 03_ssd1306.rs
-│   └── 04_ble_advertise.rs
+│   ├── 04_ble_advertise.rs
+│   └── 05_ble_csc.rs
 └── src/
     ├── main.rs              # 主固件入口（占位）
     ├── lib.rs
@@ -196,7 +234,11 @@ cargo build --example 01_blink
 cargo run --example 01_blink
 # 预期：串口看到日志，GPIO8 LED 闪烁
 
-# 4. BLE
+# 4. BLE CSC（推荐）
+cargo run --example 05_ble_csc
+# nRF Connect：连接后订阅 0x2A5B，应收到累计转数 + 事件时间
+
+# 4b. 仅广播（无 GATT）
 cargo run --example 04_ble_advertise
 # 手机 nRF Connect 可扫到 "DIY Cadence Sensor"
 ```
@@ -205,16 +247,18 @@ cargo run --example 04_ble_advertise
 
 ## 常见问题排查
 
-| 现象 | 可能原因 | 处理 |
-|------|----------|------|
-| `cargo install` 极慢 / 失败 | 编译 OpenSSL | 改用 **Homebrew** 或 **GitHub 预编译 espup** |
-| `brew install` 卡住 | Homebrew auto-update | `export HOMEBREW_NO_AUTO_UPDATE=1` |
-| 找不到串口 | 驱动 / 线材 | 换数据线；`ls /dev/cu.*`；安装 CP210x/CH340 驱动 |
-| `espflash` 无法连接 | 端口占用 | 关闭其他串口监视器；指定 `ESPFLASH_PORT` |
-| 首次 `cargo build` 很久 | 下载并编译 ESP-IDF | 正常；确保网络稳定；`ESP_IDF_TOOLS_INSTALL_DIR=global` |
-| `ldproxy` not found | PATH | `export PATH="$HOME/.cargo/bin:$(brew --prefix)/bin:$PATH"` |
-| BLE 扫不到 | sdkconfig / 内存 | 检查 `sdkconfig.defaults` 中 `CONFIG_BT_*`；参考 esp-idf-svc `bt_gatt_server` 示例 |
-| OLED 无显示 | 接线 / 地址 | 确认 3.3V、SDA/SCL、I2C 地址 0x3C |
+
+| 现象                      | 可能原因                 | 处理                                                                         |
+| ----------------------- | -------------------- | -------------------------------------------------------------------------- |
+| `cargo install` 极慢 / 失败 | 编译 OpenSSL           | 改用 **Homebrew** 或 **GitHub 预编译 espup**                                     |
+| `brew install` 卡住       | Homebrew auto-update | `export HOMEBREW_NO_AUTO_UPDATE=1`                                         |
+| 找不到串口                   | 驱动 / 线材              | 换数据线；`ls /dev/cu.`*；安装 CP210x/CH340 驱动                                     |
+| `espflash` 无法连接         | 端口占用                 | 关闭其他串口监视器；指定 `ESPFLASH_PORT`                                               |
+| 首次 `cargo build` 很久     | 下载并编译 ESP-IDF        | 正常；确保网络稳定；`ESP_IDF_TOOLS_INSTALL_DIR=global`                               |
+| `ldproxy` not found     | PATH                 | `export PATH="$HOME/.cargo/bin:$(brew --prefix)/bin:$PATH"`                |
+| BLE 扫不到                 | sdkconfig / 内存       | 检查 `sdkconfig.defaults` 中 `CONFIG_BT_*`；参考 esp-idf-svc `bt_gatt_server` 示例 |
+| OLED 无显示                | 接线 / 地址              | 确认 3.3V、SDA/SCL、I2C 地址 0x3C                                                |
+
 
 ---
 
@@ -230,3 +274,4 @@ cargo run --example 04_ble_advertise
 - [Rust on ESP Book](https://docs.espressif.com/projects/rust/book/)
 - [esp-idf-svc BLE GATT 示例](https://github.com/esp-rs/esp-idf-svc/blob/master/examples/bt_gatt_server.rs)
 - CSC 规范：Bluetooth SIG Cycling Speed and Cadence Service `0x1816`
+

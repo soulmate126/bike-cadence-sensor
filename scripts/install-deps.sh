@@ -32,9 +32,11 @@ echo "==> ESP Rust 工具链（RISC-V + esp-idf std）..."
 espup install --std --targets esp32c3
 
 echo ""
-echo "完成。每次新开终端执行:"
-echo '  export PATH="$HOME/.cargo/bin:$(brew --prefix)/bin:$PATH"  # rustup cargo 必须在 brew cargo 之前'
-echo "  source ~/export-esp.sh   # 若文件非空"
+echo "完成。进入项目目录后加载环境（三选一）:"
+echo "  1. direnv（推荐，自动）: brew install direnv && direnv allow"
+echo "  2. 手动: source scripts/env.sh"
+echo "  3. Cursor/VS Code: 打开本项目，集成终端已配置 PATH"
+echo ""
 echo "  cd $(dirname "$0")/.."
 echo "  cargo build --example 01_blink"
 echo "  cargo run --example 01_blink"
