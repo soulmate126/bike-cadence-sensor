@@ -67,12 +67,15 @@ name = "bike-cadence-sensor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "cadence-core",
+ "display-interface-i2c",
  "embassy-time",
  "embedded-graphics",
  "embuild",
  "enumset",
  "esp-idf-hal",
  "esp-idf-svc",
+ "esp32-nimble",
  "heapless 0.8.0",
  "log",
  "ssd1306",
@@ -150,6 +153,10 @@ name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
+
+[[package]]
+name = "cadence-core"
+version = "0.1.0"
 
 [[package]]
 name = "camino"
@@ -731,6 +738,28 @@ dependencies = [
  "serde",
  "strum 0.24.1",
  "which",
+]
+
+[[package]]
+name = "esp32-nimble"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aabfc9f595c551d3270ab2a5feca5f5b961863bcc40bb5549a8f9b4154fd8997"
+dependencies = [
+ "anyhow",
+ "bitflags 2.13.0",
+ "bstr",
+ "cfg-if",
+ "embassy-sync",
+ "embuild",
+ "esp-idf-svc",
+ "heapless 0.8.0",
+ "log",
+ "num_enum",
+ "once_cell",
+ "uuid",
+ "zerocopy",
+ "zerocopy-derive",
 ]
 
 [[package]]
@@ -1662,6 +1691,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
+name = "uuid"
+version = "1.23.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "144d6b123cef80b301b8f72a9e2ca4370ddec21950d0a103dd22c437006d2db7"
+
+[[package]]
 name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2052,6 +2087,26 @@ dependencies = [
  "serde_json",
  "unicode-xid",
  "wasmparser",
+]
+
+[[package]]
+name = "zerocopy"
+version = "0.8.52"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce1022995ff5ff5d841ad7d994facc23098cd40152f2c1d11cd607c6f530653f"
+dependencies = [
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.8.52"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ae7f38b72ec2a254e2b87ef277cf2cd4fb97cbebf944faa6f33354da0867930"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]

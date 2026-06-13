@@ -122,14 +122,15 @@ ESPFLASH_PORT=/dev/cu.usbmodem1101 ./cargo run --example 01_blink
 
 | 顺序 | 命令 | 验证内容 | 预期结果 |
 |------|------|----------|----------|
-| 1 | `./cargo run --example 01_blink` | 烧录 + 串口 + LED | GPIO8 LED 闪烁，串口有日志 |
-| 2 | `./cargo run --example 05_ble_csc` | BLE CSC 核心 | 手机可连，0x2A5B 收到通知 |
-| 3 | GT5 Pro 配对 | 最终目标 | 手表显示踏频 |
-| 4 | `./cargo run --example 02_hall_input` | 霍尔 GPIO | 短接 GPIO3–GND，计数增加 |
-| 5 | `./cargo run --example 03_ssd1306` | OLED（可选） | 屏幕显示 `Hello Bike` |
-| 6 | `./cargo run --example 04_ble_advertise` | 仅广播（对比用） | 可扫到设备名，无 GATT |
+| 1 | `./cargo run --example 01_blink` | 烧录 + 串口 + LED | GPIO8 LED 闪烁 |
+| 2 | `./cargo run --example 02_hall_input` | 霍尔 GPIO | 磁铁靠近 GPIO4，边沿计数增加 |
+| 3 | `./cargo run --example 03_ssd1306` | OLED | 屏幕显示 `Hello Bike` |
+| 4 | `./cargo run --example 04_ble_advertise` | 仅广播 | 可扫到设备名，无 GATT |
+| 5 | `./cargo run --example 05_ble_csc` | 霍尔 + BLE CSC | nRF Connect 订阅 0x2A5B 收到通知 |
+| 6 | `./cargo run --example 06_hall_oled` | 霍尔 + OLED | 屏幕显示 RPM / COUNT |
+| 7 | `./cargo run` | **主固件** | 霍尔 + OLED（可选）+ BLE + 状态 LED |
 
-引脚定义见 [`src/board/mod.rs`](../src/board/mod.rs)。
+引脚：**霍尔 GPIO4**，**I2C GPIO5/6**，**LED GPIO8**。可调参数见 [`src/board/config.rs`](../src/board/config.rs)。
 
 ### 4. 手机验证 BLE CSC
 
@@ -138,22 +139,35 @@ ESPFLASH_PORT=/dev/cu.usbmodem1101 ./cargo run --example 01_blink
 1. 扫描 **DIY Cadence Sensor**
 2. 连接 → 找到服务 **0x1816**（Cycling Speed and Cadence）
 3. 对特征 **0x2A5B** 开启 Notify
-4. 应收到 5 字节数据：`[flags, rev_lo, rev_hi, time_lo, time_hi]`
+4. 应收到 5 字节数据：`[flags, rev_lo, rev_hi, time_lo, time_hi]`（flags 含接触位）
 
-`05_ble_csc` 模拟 **80 RPM**（每 750ms 一次通知）。
+`05_ble_csc` / 主固件使用真实霍尔输入；订阅 0x2A5B 后会**立即收到当前累计转数**。
 
 **华为 GT5 Pro：**
 
 ```text
 设置 → 健康与健身设备 → 添加设备 → 踏频器
+锻炼 → 户外骑行/室内单车 → 运动准备阶段自动连接
 ```
 
-### 5. 下一步：主固件集成
+固件已启用 **BLE Bonding**，首次升级后请删除并重新添加踏频器。
 
-各 example 通过后，将霍尔、算法、BLE 接入 `main.rs`：
+### 5. 主固件
+
+```bash
+./cargo run
+```
 
 ```text
 霍尔脉冲 → CadenceCalculator → CadenceData → CscServer::notify_measurement()
+```
+
+主固件特性：OLED 失败自动降级、GPIO8 状态 LED（未连接慢闪 / 已连接常亮 / 有踏频快闪）、断连后自动恢复广播。
+
+### 6. 主机单元测试（无需板子）
+
+```bash
+cargo test -p cadence-core
 ```
 
 ---
@@ -170,7 +184,8 @@ cd bike-cadence-sensor
 # 有板子
 ./cargo run --example 01_blink
 ./cargo run --example 05_ble_csc
-# → GT5 Pro 配对
+./cargo run
+# → GT5 Pro：运动准备阶段自动连踏频器
 ```
 
 ---

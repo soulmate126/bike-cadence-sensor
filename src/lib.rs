@@ -1,8 +1,11 @@
+pub mod app;
 pub mod board;
 pub mod sensors;
 pub mod cadence;
 pub mod ble;
 pub mod display;
+pub mod hardware;
+pub mod util;
 pub mod gps;
 pub mod navigation;
 
